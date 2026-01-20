@@ -1,0 +1,44 @@
+[
+  {
+    "subscription": {
+      "endpoint": "https://fcm.googleapis.com/fcm/send/cY3OnK_xDeo:APA91bFqyoCdGigIG5h-Z7EHm1OS5jFjDgw-zyItCM0pCrdbOxZOsPreFBggouJra18u3bg-Bb_aNL7H8out2O_aOnbXT2C_Q0zh9WdgkfNjnHELZ3IE8VnE5j0QBlNRclFMKXAYzzs2",
+      "expirationTime": null,
+      "keys": {
+        "p256dh": "BJpO_iAbpCgUpK2Qf4fx6bBlSy3oPNWSDIiB8kF3b8a4QqkZzRHZwGunGoM54GUimaQ1KGfwG-Tb3DOmzXmZb-I",
+        "auth": "OyFbtGxJUE6KbZGodEFmYw"
+      }
+    },
+    "settings": {
+      "co2": {
+        "enabled": true,
+        "threshold": 200,
+        "cooldown": 3600,
+        "once": false
+      },
+      "auroraChance": {
+        "enabled": false,
+        "threshold": 30,
+        "cooldown": 7200,
+        "once": false
+      },
+      "kp": {
+        "enabled": false,
+        "threshold": 5,
+        "cooldown": 10800,
+        "once": false
+      },
+      "smhi": {
+        "enabled": false,
+        "severity": 1,
+        "cooldown": 10800,
+        "once": false
+      },
+      "lowHumidity": {
+        "enabled": false,
+        "threshold": 30,
+        "cooldown": 7200,
+        "once": false
+      }
+    }
+  }
+]

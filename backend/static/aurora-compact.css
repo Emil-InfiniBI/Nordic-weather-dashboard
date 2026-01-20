@@ -1,0 +1,338 @@
+/* Aurora Card - Compact with Expandable Details */
+.aurora-card-main {
+  width: 100%;
+  margin-top: 12px;
+  background: rgba(15, 20, 30, 0.92);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 
+              inset 0 1px 0 rgba(167, 139, 250, 0.15),
+              0 0 40px rgba(139, 92, 246, 0.08);
+}
+
+/* Compact Header */
+.aurora-header-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.aurora-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aurora-icon {
+  font-size: 20px;
+}
+
+.aurora-title {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #a78bfa 0%, #86efac 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.aurora-kp-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid;
+  transition: all 0.3s ease;
+}
+
+.aurora-kp-badge.kp-quiet {
+  background: rgba(134, 239, 172, 0.1);
+  border-color: rgba(134, 239, 172, 0.3);
+}
+
+.aurora-kp-badge.kp-moderate {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.aurora-kp-badge.kp-active {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.kp-label {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kp-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+}
+
+/* Compact Probability */
+.aurora-probability-compact {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.probability-value-compact {
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a78bfa 0%, #86efac 50%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+
+.probability-label-compact {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Quick Summary */
+.aurora-quick-summary {
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-left: 3px solid #a78bfa;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: 'Inter', sans-serif;
+}
+
+/* Details Toggle */
+.aurora-details {
+  border-top: 1px solid rgba(167, 139, 250, 0.15);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.aurora-details-toggle {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  user-select: none;
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: block;
+  text-align: center;
+  background: rgba(139, 92, 246, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.aurora-details-toggle:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.aurora-details[open] .aurora-details-toggle {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 16px;
+}
+
+.aurora-details-toggle::-webkit-details-marker,
+.aurora-details-toggle::marker {
+  display: none;
+}
+
+.aurora-details-content {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Probability Display (in details) */
+.aurora-probability-display {
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.probability-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.breakdown-item {
+  display: grid;
+  grid-template-columns: 100px 1fr 50px;
+  align-items: center;
+  gap: 10px;
+}
+
+.breakdown-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Inter', sans-serif;
+}
+
+.breakdown-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.breakdown-fill {
+  height: 100%;
+  transition: width 0.8s ease;
+  border-radius: 4px;
+}
+
+.breakdown-fill.bar-high {
+  background: linear-gradient(90deg, #86efac 0%, #22c55e 100%);
+}
+
+.breakdown-fill.bar-medium {
+  background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.breakdown-fill.bar-low {
+  background: linear-gradient(90deg, #f87171 0%, #ef4444 100%);
+}
+
+.breakdown-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: right;
+}
+
+/* Metrics Grid */
+.aurora-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.metric-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  border-radius: 8px;
+  padding: 10px;
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(167, 139, 250, 0.3);
+  transform: translateY(-2px);
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.metric-icon {
+  font-size: 16px;
+}
+
+.metric-name {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Inter', sans-serif;
+}
+
+.metric-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.metric-status {
+  font-size: 9px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.metric-status.status-good {
+  background: rgba(134, 239, 172, 0.2);
+  color: #86efac;
+  border: 1px solid rgba(134, 239, 172, 0.3);
+}
+
+.metric-status.status-ok {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.metric-status.status-bad {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .aurora-card-main {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .probability-value-compact {
+    font-size: 28px;
+  }
+  
+  .aurora-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .breakdown-item {
+    grid-template-columns: 80px 1fr 45px;
+  }
+}

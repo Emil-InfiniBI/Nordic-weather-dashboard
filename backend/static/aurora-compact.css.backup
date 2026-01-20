@@ -1,0 +1,188 @@
+/* Compact Aurora Card Styles */
+.aurora-card-main {
+  width: 100%;
+  margin-top: 12px;
+  background: rgba(30, 35, 45, 0.85);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.aurora-compact-layout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.aurora-title {
+  font-size: 14px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #a78bfa 0%, #86efac 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.aurora-probability-inline {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  flex: 1;
+}
+
+.probability-value-inline {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #a78bfa 0%, #86efac 50%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+
+.probability-label-inline {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.aurora-kp-inline {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  background: rgba(167, 139, 250, 0.15);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+
+.kp-label-inline {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+}
+
+.kp-value-inline {
+  font-size: 17px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #a78bfa 0%, #86efac 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.aurora-gauges-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.gauge-item {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(167, 139, 250, 0.08) 100%);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 8px;
+  padding: 6px 8px;
+  transition: all 0.3s ease;
+}
+
+.gauge-item:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(167, 139, 250, 0.12) 100%);
+  border-color: rgba(167, 139, 250, 0.35);
+  transform: translateY(-2px);
+}
+
+.gauge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.gauge-title {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 600;
+}
+
+.gauge-value {
+  font-size: 14px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #a78bfa 0%, #86efac 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gauge-svg {
+  width: 100%;
+  height: auto;
+}
+
+.gauge-fill {
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gauge-label-left,
+.gauge-label-right,
+.gauge-label-center {
+  font-size: 7px;
+  fill: rgba(255, 255, 255, 0.4);
+  font-weight: 600;
+}
+
+.gauge-label-left {
+  text-anchor: start;
+}
+
+.gauge-label-right {
+  text-anchor: end;
+}
+
+.gauge-label-center {
+  text-anchor: middle;
+  font-size: 6px;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .aurora-card-main {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .aurora-compact-layout {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  
+  .aurora-title {
+    flex: 1 1 100%;
+    font-size: 12px;
+  }
+  
+  .aurora-probability-inline {
+    flex: 1 1 auto;
+  }
+  
+  .probability-value-inline {
+    font-size: 20px;
+  }
+  
+  .kp-value-inline {
+    font-size: 14px;
+  }
+  
+  .gauge-mini-label {
+    font-size: 7px;
+  }
+  
+  .gauge-mini-value {
+    font-size: 9px;
+  }
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Cloudflare Tunnel for Weather Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/weather-cinematic-dashboard
+ExecStart=/usr/bin/cloudflared tunnel --url http://localhost:5000
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

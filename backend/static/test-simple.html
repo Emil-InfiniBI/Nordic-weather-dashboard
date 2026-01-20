@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Test</title>
+  <style>
+    body { background: #1e2937; color: white; font-family: sans-serif; padding: 20px; }
+    .ok { color: #22c55e; }
+    .error { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <h1>Simple Test Page</h1>
+  <div id="log"></div>
+  
+  <script>
+    function log(msg, isError) {
+      const div = document.createElement('div');
+      div.className = isError ? 'error' : 'ok';
+      div.textContent = msg;
+      document.getElementById('log').appendChild(div);
+    }
+    
+    log('Page loaded OK');
+    
+    // Test fetch
+    fetch('/api/current')
+      .then(r => r.json())
+      .then(d => log('API working: temp=' + d.temperature))
+      .catch(e => log('API error: ' + e, true));
+  </script>
+  
+  <h2>Now testing module import...</h2>
+  <div id="module-log"></div>
+  
+  <script type="module">
+    function log(msg, isError) {
+      const div = document.createElement('div');
+      div.className = isError ? 'error' : 'ok';
+      div.textContent = msg;
+      document.getElementById('module-log').appendChild(div);
+    }
+    
+    log('Module script started');
+    
+    try {
+      // Try importing THREE
+      const THREE = await import('./vendor/three.module.js');
+      log('THREE.js loaded OK');
+    } catch(e) {
+      log('THREE.js failed: ' + e, true);
+    }
+    
+    try {
+      // Try importing clouds
+      const clouds = await import('./threejs/clouds.js?v=4');
+      log('clouds.js loaded OK');
+    } catch(e) {
+      log('clouds.js failed: ' + e, true);
+    }
+    
+    log('All module imports complete');
+  </script>
+</body>
+</html>

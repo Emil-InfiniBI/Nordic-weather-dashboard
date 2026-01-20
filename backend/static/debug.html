@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Debug Page</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1e2937; color: #fff; }
+    .error { color: #ef4444; }
+    .success { color: #22c55e; }
+    pre { background: #111; padding: 10px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>Weather Dashboard Debug</h1>
+  <div id="output"></div>
+  
+  <script>
+    const log = (msg, isError = false) => {
+      const div = document.createElement('div');
+      div.className = isError ? 'error' : 'success';
+      div.textContent = new Date().toISOString().substr(11, 8) + ' - ' + msg;
+      document.getElementById('output').appendChild(div);
+    };
+    
+    // Test API endpoints
+    async function testAPIs() {
+      const endpoints = [
+        '/api/current',
+        '/api/forecast', 
+        '/api/sun',
+        '/api/indoor',
+        '/api/smhi'
+      ];
+      
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep);
+          const data = await res.json();
+          log(`${ep}: OK (${JSON.stringify(data).length} bytes)`);
+        } catch (e) {
+          log(`${ep}: FAILED - ${e.message}`, true);
+        }
+      }
+    }
+    
+    // Test loading scripts
+    async function testScripts() {
+      const scripts = ['app.js', 'overview-new.js'];
+      
+      for (const script of scripts) {
+        try {
+          const res = await fetch('/' + script);
+          const text = await res.text();
+          log(`${script}: ${text.length} bytes loaded`);
+          
+          // Try to check for syntax errors
+          try {
+            new Function(text);
+            log(`${script}: No immediate syntax errors`);
+          } catch (e) {
+            log(`${script}: SYNTAX ERROR - ${e.message}`, true);
+          }
+        } catch (e) {
+          log(`${script}: FAILED - ${e.message}`, true);
+        }
+      }
+    }
+    
+    // Check service worker
+    async function testServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg) {
+            log(`Service Worker: Registered (scope: ${reg.scope})`);
+            if (reg.active) {
+              log(`Service Worker: Active`);
+            }
+          } else {
+            log('Service Worker: Not registered');
+          }
+        } catch (e) {
+          log(`Service Worker: Error - ${e.message}`, true);
+        }
+      } else {
+        log('Service Worker: Not supported');
+      }
+    }
+    
+    // Run all tests
+    async function runTests() {
+      log('=== Starting Debug Tests ===');
+      
+      log('--- API Tests ---');
+      await testAPIs();
+      
+      log('--- Script Tests ---');
+      await testScripts();
+      
+      log('--- Service Worker Test ---');
+      await testServiceWorker();
+      
+      log('=== Tests Complete ===');
+    }
+    
+    runTests();
+  </script>
+</body>
+</html>
