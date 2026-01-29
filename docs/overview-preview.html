@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Overview Design - Preview</title>
+  
+  <!-- Base styles -->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: white;
+      overflow-x: hidden;
+    }
+    
+    .preview-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    
+    .preview-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    .preview-title {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .preview-subtitle {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .preview-note {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 30px 0;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.8);
+    }
+  </style>
+  
+  <!-- New Overview Styles -->
+  <link rel="stylesheet" href="overview-new.css?v=12">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  
+  <div class="preview-container">
+    <div class="preview-header">
+      <h1 class="preview-title">🌤️ New Overview Design Preview</h1>
+      <p class="preview-subtitle">Beautiful visual weather display with temperature, forecast, and precipitation</p>
+    </div>
+    
+    <div class="preview-note">
+      💡 This is a test preview. If you like it, we'll integrate it into the main dashboard!
+    </div>
+    
+    <!-- Include the new overview HTML -->
+    <div id="new-overview-container">
+      <!-- The content from overview-new.html will go here -->
+    </div>
+
+    <!-- 24-Hour Forecast Timeline -->
+    <div style="margin-top: 40px; padding: 24px; background: rgba(30, 35, 45, 0.75); backdrop-filter: blur(16px); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
+      <h3 style="font-size: 18px; font-weight: 600; color: rgba(255, 255, 255, 0.9); margin-bottom: 20px; text-align: center;">24-Hour Temperature Forecast</h3>
+      <div style="position: relative; height: 300px; width: 100%;">
+        <canvas id="forecast-timeline-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weather Animation Overlays -->
+  <div id="rain-overlay" class="weather-overlay"></div>
+  <div id="snow-overlay" class="weather-overlay"></div>
+  <div id="fog-overlay" class="weather-overlay"></div>
+  
+  <!-- Load the overview content -->
+  <script>
+    // For testing, we'll inject the HTML directly
+    const API = "";
+    const DALARNA_LON = 15.1883;
+    const DALARNA_LAT = 60.1496;
+    let forecastTimelineChart = null;
+
+    // Load the overview HTML
+    fetch('overview-new.html?v=12')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('new-overview-container').innerHTML = html;
+        // Load and execute the JavaScript
+        return fetch('overview-new.js?v=12');
+      })
+      .then(res => res.text())
+      .then(js => {
+        eval(js);
+        // Update the page with data
+        updateNewOverviewPage();
+        // Refresh every 30 seconds
+        setInterval(updateNewOverviewPage, 30000);
+      })
+      .catch(err => console.error('Error loading preview:', err));
+
+    // Load forecast chart independently (don't wait for overview)
+    document.addEventListener('DOMContentLoaded', () => {
+      loadForecastChart();
+    });
+
+    async function loadForecastChart() {
+      console.log('loadForecastChart called');
+      try {
+        const forecastCanvas = document.getElementById('forecast-timeline-chart');
+        if (!forecastCanvas) {
+          console.warn('Forecast canvas not found');
+          return;
+        }
+        let labels = [];
+        let temperatures = [];
+        let precipitations = [];
+        
+        // Try SMHI 24h timeseries first
+        let ok = false;
+        try {
+          const resp = await fetch('/api/forecast-24h');
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data && Array.isArray(data.timeSeries) && data.timeSeries.length) {
+              const next24Hours = data.timeSeries;
+              next24Hours.forEach(entry => {
+                const dt = new Date(entry.validTime);
+                const hour = dt.getHours();
+                labels.push(`${hour.toString().padStart(2, '0')}:00`);
+                const params = entry.params || {};
+                temperatures.push((typeof params.t === 'number') ? params.t : 0);
+                precipitations.push((typeof params.pmean === 'number') ? params.pmean : 0);
+              });
+              ok = true;
+              console.log('Loaded SMHI forecast-24h');
+            }
+          }
+        } catch (e) {
+          console.warn('SMHI 24h fetch failed, will fallback:', e);
+        }
+
+        // Fallback to backend outdoor history (24h)
+        if (!ok) {
+          try {
+            const resp2 = await fetch('/api/history?range=24h');
+            if (resp2.ok) {
+              const hist = await resp2.json();
+              if (hist && Array.isArray(hist.timestamps) && Array.isArray(hist.temperature)) {
+                labels = hist.timestamps.map(t => t);
+                temperatures = hist.temperature.map(v => (typeof v === 'number') ? v : null).filter(v => v !== null);
+                // Align lengths if timestamps > temps
+                if (temperatures.length < labels.length) {
+                  labels = labels.slice(labels.length - temperatures.length);
+                }
+                precipitations = new Array(temperatures.length).fill(0);
+                ok = true;
+                console.log('Loaded 24h outdoor history as fallback');
+              }
+            }
+          } catch (e2) {
+            console.warn('History fallback failed:', e2);
+          }
+        }
+
+        if (!ok || !labels.length || !temperatures.length) {
+          console.error('No data available for forecast chart');
+          const ctx = forecastCanvas.getContext('2d');
+          ctx.font = '16px sans-serif';
+          ctx.fillStyle = 'rgba(255,255,255,0.7)';
+          ctx.textAlign = 'center';
+          ctx.fillText('No forecast data available', forecastCanvas.width / 2, forecastCanvas.height / 2);
+          ctx.fillText('Backend may need restart to load new routes', forecastCanvas.width / 2, forecastCanvas.height / 2 + 25);
+          return;
+        }
+
+        // Pin canvas dimensions to avoid resize feedback that inflates height
+        forecastCanvas.height = 250;
+        forecastCanvas.style.height = '250px';
+        forecastCanvas.style.width = '100%';
+        const ctx = forecastCanvas.getContext('2d');
+
+        forecastTimelineChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Temperature (°C)',
+                data: temperatures,
+                borderColor: 'rgba(255, 180, 80, 1)',
+                backgroundColor: function(context) {
+                  const ctx = context.chart.ctx;
+                  const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+                  gradient.addColorStop(0, 'rgba(255, 150, 50, 0.4)');
+                  gradient.addColorStop(0.7, 'rgba(255, 200, 100, 0.15)');
+                  gradient.addColorStop(1, 'rgba(255, 200, 100, 0)');
+                  return gradient;
+                },
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: 'rgba(255, 180, 80, 1)',
+                pointBorderColor: 'rgba(255, 255, 255, 0.8)',
+                pointBorderWidth: 2,
+                yAxisID: 'y'
+              },
+              {
+                label: 'Precipitation (mm/h)',
+                data: precipitations,
+                borderColor: 'rgba(100, 180, 255, 1)',
+                backgroundColor: 'rgba(100, 180, 255, 0.2)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                pointBackgroundColor: 'rgba(100, 180, 255, 1)',
+                pointBorderColor: 'rgba(255, 255, 255, 0.8)',
+                pointBorderWidth: 1,
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
+            animation: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  font: {
+                    size: 12,
+                    weight: '500'
+                  },
+                  padding: 15,
+                  usePointStyle: true,
+                  pointStyle: 'circle'
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(20, 25, 35, 0.95)',
+                titleFont: { size: 14, weight: '600' },
+                bodyFont: { size: 13 },
+                padding: 12,
+                cornerRadius: 8,
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                borderWidth: 1,
+                displayColors: true,
+                callbacks: {
+                  label: function(context) {
+                    let label = context.dataset.label || '';
+                    if (label) {
+                      label += ': ';
+                    }
+                    if (context.parsed.y !== null) {
+                      if (context.datasetIndex === 0) {
+                        label += context.parsed.y.toFixed(1) + '°C';
+                      } else {
+                        label += context.parsed.y.toFixed(1) + ' mm/h';
+                      }
+                    }
+                    return label;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: {
+                  color: 'rgba(255, 255, 255, 0.05)',
+                  drawBorder: false
+                },
+                ticks: {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  font: {
+                    size: 11
+                  },
+                  maxRotation: 0,
+                  autoSkip: true,
+                  autoSkipPadding: 10
+                }
+              },
+              y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                grid: {
+                  color: 'rgba(255, 255, 255, 0.05)',
+                  drawBorder: false
+                },
+                ticks: {
+                  color: 'rgba(255, 180, 80, 0.9)',
+                  font: {
+                    size: 11,
+                    weight: '500'
+                  },
+                  callback: function(value) {
+                    return value.toFixed(0) + '°';
+                  }
+                },
+                title: {
+                  display: true,
+                  text: 'Temperature',
+                  color: 'rgba(255, 180, 80, 0.9)',
+                  font: {
+                    size: 12,
+                    weight: '600'
+                  }
+                }
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                grid: {
+                  drawOnChartArea: false,
+                  drawBorder: false
+                },
+                ticks: {
+                  color: 'rgba(100, 180, 255, 0.9)',
+                  font: {
+                    size: 11,
+                    weight: '500'
+                  },
+                  callback: function(value) {
+                    return value.toFixed(1) + ' mm';
+                  }
+                },
+                title: {
+                  display: true,
+                  text: 'Precipitation',
+                  color: 'rgba(100, 180, 255, 0.9)',
+                  font: {
+                    size: 12,
+                    weight: '600'
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        console.log('Forecast chart loaded successfully');
+      } catch (err) {
+        console.error('Failed to load forecast chart:', err);
+      }
+    }
+  </script>
+  
+</body>
+</html>

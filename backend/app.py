@@ -124,6 +124,10 @@ def api_aurora():
     import requests
     import math
     try:
+        # Check if it's daylight - aurora cannot be seen during daytime
+        sun_times = get_sun_times()
+        is_daylight = not sun_times.get('is_night', True)  # If not night, it's daylight
+        
         # Fetch NOAA OVATION aurora forecast (updates every ~15 minutes)
         ovation_response = requests.get('https://services.swpc.noaa.gov/json/ovation_aurora_latest.json', timeout=10)
         ovation_data = ovation_response.json()
@@ -307,6 +311,11 @@ def api_aurora():
                 weather_condition = "Rain"
             elif precipitation == 6:
                 weather_condition = "Heavy rain"
+        
+        # Apply daylight factor (aurora cannot be seen during daytime)
+        if is_daylight:
+            weather_factor = 0.0
+            weather_condition = "Daylight (aurora not visible)"
         
         # 7. Final probability combining space weather and local weather
         final_probability = geomagnetic_prob * weather_factor

@@ -1,0 +1,126 @@
+<!-- NEW OVERVIEW PAGE DESIGN - Test Version -->
+<!-- Beautiful visual weather display with temperature, forecast, and precipitation -->
+
+<div class="overview-hero">
+  <!-- Welcome Section -->
+  <div class="hero-welcome">
+    <h1 class="hero-greeting" id="hero-greeting">Good Morning</h1>
+    <p class="hero-date" id="hero-date">Friday, 10 January 2026</p>
+    <p class="hero-location">📍 Ludvika, Dalarna</p>
+  </div>
+
+  <!-- Main Weather Display -->
+  <div class="hero-weather-card">
+    <div class="hero-weather-visual">
+      <!-- Large Weather Icon -->
+      <div class="hero-icon-container">
+        <div class="hero-weather-icon" id="hero-main-icon">🌤️</div>
+        <div class="hero-icon-glow"></div>
+      </div>
+      
+      <!-- Temperature Display -->
+      <div class="hero-temp-display">
+        <div class="hero-current-temp" id="hero-current-temp">-16°</div>
+        <div class="hero-temp-unit">celsius</div>
+      </div>
+    </div>
+
+    <!-- Weather Description -->
+    <div class="hero-weather-info">
+      <h2 class="hero-condition-text" id="hero-condition-text">Clear Sky</h2>
+      <p class="hero-weather-desc" id="hero-weather-desc">Pleasant weather with clear skies. Pressure stable.</p>
+      <p class="hero-feels-like" id="hero-feels-like-text">Feels like -20°C</p>
+      
+      <!-- Weather Stats Row -->
+      <div class="hero-stats-row">
+        <div class="hero-stat">
+          <div class="hero-stat-icon">💧</div>
+          <div class="hero-stat-content">
+            <div class="hero-stat-value" id="hero-stat-humidity">76%</div>
+            <div class="hero-stat-label">Humidity</div>
+          </div>
+        </div>
+        
+        <div class="hero-stat">
+          <div class="hero-stat-icon">💨</div>
+          <div class="hero-stat-content">
+            <div class="hero-stat-value" id="hero-stat-wind">2.3 m/s</div>
+            <div class="hero-stat-label">Wind</div>
+          </div>
+        </div>
+        
+        <div class="hero-stat">
+          <div class="hero-stat-icon">🎈</div>
+          <div class="hero-stat-content">
+            <div class="hero-stat-value" id="hero-stat-pressure">1004 hPa</div>
+            <div class="hero-stat-label">Pressure</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Precipitation Card (only show if raining/snowing) -->
+  <div class="hero-precipitation-card" id="hero-precipitation-card" style="display: none;">
+    <div class="precip-icon" id="precip-icon">🌧️</div>
+    <div class="precip-content">
+      <div class="precip-amount" id="precip-amount">2.5 mm</div>
+      <div class="precip-label" id="precip-label">Rain in last hour</div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Stats Grid -->
+<div class="overview-quick-stats">
+  <div class="quick-stat-card">
+    <div class="quick-stat-icon">🌡️</div>
+    <div class="quick-stat-content">
+      <div class="quick-stat-value" id="quick-indoor-temp">--°C</div>
+      <div class="quick-stat-label">Indoor Temp</div>
+    </div>
+  </div>
+  
+  <div class="quick-stat-card">
+    <div class="quick-stat-icon">💨</div>
+    <div class="quick-stat-content">
+      <div class="quick-stat-value" id="quick-indoor-co2">-- ppm</div>
+      <div class="quick-stat-label">CO₂ Level</div>
+    </div>
+  </div>
+  
+  <div class="quick-stat-card">
+    <div class="quick-stat-icon">🌌</div>
+    <div class="quick-stat-content">
+      <div class="quick-stat-value" id="quick-aurora">--%</div>
+      <div class="quick-stat-label">Aurora Chance</div>
+    </div>
+  </div>
+  
+  <div class="quick-stat-card" id="warnings-card" onclick="toggleWarningsPanel()" style="cursor: pointer;">
+    <div class="quick-stat-icon">⚠️</div>
+    <div class="quick-stat-content">
+      <div class="quick-stat-value" id="quick-warnings">0</div>
+      <div class="quick-stat-label">Active Warnings</div>
+    </div>
+  </div>
+</div>
+
+<!-- Expandable Warnings Panel -->
+<div id="warnings-panel" class="warnings-panel" style="display: none;">
+  <div class="warnings-panel-header">
+    <h3>⚠️ Active Weather Warnings</h3>
+    <button class="warnings-close-btn" onclick="toggleWarningsPanel()">✕</button>
+  </div>
+  <div id="warnings-list" class="warnings-list">
+    <!-- Warnings will be populated here -->
+  </div>
+</div>
+
+<!-- 24-Hour Forecast Timeline -->
+<div style="margin: 40px 20px 20px 20px; padding: 24px; background: rgba(30, 35, 45, 0.75); backdrop-filter: blur(16px); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
+  <h3 style="font-size: 18px; font-weight: 600; color: rgba(255, 255, 255, 0.9); margin-bottom: 20px; text-align: center;">24-Hour Temperature Forecast</h3>
+  <div style="position: relative; height: 300px; width: 100%;">
+    <canvas id="forecast-timeline-chart"></canvas>
+  </div>
+</div>
+

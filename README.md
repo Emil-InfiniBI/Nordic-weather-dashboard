@@ -4,6 +4,12 @@ A beautiful, cinematic weather dashboard for Raspberry Pi with real-time sensor 
 
 ![Weather Dashboard](docs/screenshot.png)
 
+## 🌐 Live Demo
+
+**GitHub Pages**: [https://emil-infinibi.github.io/Nordic-weather-dashboard/](https://emil-infinibi.github.io/Nordic-weather-dashboard/)
+
+The frontend is hosted on GitHub Pages and connects to the backend API via Cloudflare Tunnel.
+
 ## Features
 
 - 🌡️ **Real-time sensor data** from indoor and outdoor sensors via InfluxDB
@@ -98,17 +104,43 @@ weather-cinematic-dashboard/
 │   ├── config.py           # Configuration (not in repo)
 │   ├── influx.py           # InfluxDB queries
 │   ├── smhi.py             # SMHI API integration
-│   └── static/
+│   └── static/             # Source files
 │       ├── index.html      # Main HTML
 │       ├── app.js          # Main JavaScript
-│       ├── styles.css      # Main styles
-│       ├── overview-new.js # Overview page logic
-│       ├── overview-new.css# Overview styles
-│       └── background/     # Weather backgrounds
+│       └── styles.css      # Main styles
+├── docs/                   # GitHub Pages deployment
+│   └── (same as static/)
 ├── autostart/
 │   └── start-weather-dashboard.sh
 └── README.md
 ```
+
+## GitHub Pages Deployment
+
+The dashboard is hosted on GitHub Pages with the backend running on a Raspberry Pi:
+
+1. **Frontend** (GitHub Pages): Static files in `/docs` folder
+2. **Backend** (Raspberry Pi): Flask API accessible via Cloudflare Tunnel
+
+### Updating Cloudflare Tunnel URL
+
+If your Cloudflare tunnel URL changes, update it in `docs/app.js`:
+
+```javascript
+const API = "https://your-new-tunnel-url.trycloudflare.com";
+```
+
+Then commit and push the changes to update GitHub Pages.
+
+### Enable GitHub Pages
+
+1. Go to your repository settings
+2. Navigate to "Pages" section
+3. Set source to "Deploy from a branch"
+4. Select branch: `main`, folder: `/docs`
+5. Save and wait for deployment
+
+Your site will be available at: `https://emil-infinibi.github.io/Nordic-weather-dashboard/`
 
 ## Screenshots
 

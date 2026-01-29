@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Weather Dashboard</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="description" content="Cinematic weather dashboard with indoor/outdoor monitoring">
+  <meta name="theme-color" content="#1e2937">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Weather">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Icons -->
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+
+  <!-- Correct CSS file served by Flask -->
+  <link rel="stylesheet" href="overview-new.css?v=27">
+  <link rel="stylesheet" href="styles.css?v=13">
+  <link rel="stylesheet" href="aurora-compact.css?v=5">
+
+  <!-- Load THREE.js (local ES module) -->
+  <script type="module">
+      import * as THREE from "./vendor/three.module.js";
+      window.THREE = THREE;
+  </script>
+
+  <!-- GSAP Animation Library -->
+  <script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
+  
+  <!-- Chart.js for graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+</head>
+<body>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loading-content">
+      <div class="loading-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-ring"></div>
+        <div class="spinner-ring"></div>
+      </div>
+      <div class="loading-text">Loading Weather Data...</div>
+      <div class="loading-credit">Created by Emil Dybeck</div>
+    </div>
+  </div>
+
+  <!-- Background Image Layer -->
+  <div id="bg-image"></div>
+
+  <!-- Weather Animation Overlays -->
+  <div id="rain-overlay" class="weather-overlay"></div>
+  <div id="snow-overlay" class="weather-overlay"></div>
+  <div id="fog-overlay" class="weather-overlay"></div>
+
+  <!-- Canvas for Snow Animation (separate from Three.js) -->
+  <canvas id="snow-canvas"></canvas>
+
+  <!-- Three.js Canvas Layer -->
+  <canvas id="bg"></canvas>
+
+  <!-- Sidebar Navigation -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="40" height="40" viewBox="0 0 40 40">
+        <circle cx="20" cy="20" r="18" fill="none" stroke="white" stroke-width="2"/>
+        <path d="M20 10 L20 30 M10 20 L30 20" stroke="white" stroke-width="2"/>
+      </svg>
+    </div>
+    <div class="sidebar-icons">
+      <div class="sidebar-icon active">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+      </div>
+      <div class="sidebar-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+          <rect x="3" y="3" width="18" height="4" rx="1"/>
+          <rect x="3" y="10" width="18" height="4" rx="1"/>
+          <rect x="3" y="17" width="18" height="4" rx="1"/>
+        </svg>
+      </div>
+      <div class="sidebar-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 5v2m0 10v2m7-7h-2M7 12H5m13.07-5.07l-1.41 1.41M7.34 16.66l-1.41 1.41m11.72 0l-1.41-1.41M7.34 7.34L5.93 5.93" stroke="white" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+      <div class="sidebar-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+          <circle cx="12" cy="8" r="3"/>
+          <path d="M12 14c-4 0-7 2-7 4v2h14v-2c0-2-3-4-7-4z"/>
+        </svg>
+      </div>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+          <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4m-5-4l-5-5 5-5m-5 5h14" stroke="white" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="main-container">
+    
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+      <button class="tab-button active" data-tab="overview">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Overview
+      </button>
+      <button class="tab-button" data-tab="compare">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+          <path d="M4 4h7v7H4zM13 13h7v7h-7z"/>
+          <path d="M4 13l5 5M15 6l5 5"/>
+        </svg>
+        Comparison
+      </button>
+      <button class="tab-button" data-tab="outdoor">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 5v2m0 10v2m7-7h-2M7 12H5m13.07-5.07l-1.41 1.41M7.34 16.66l-1.41 1.41m11.72 0l-1.41-1.41M7.34 7.34L5.93 5.93"/>
+        </svg>
+        Outdoor
+      </button>
+      <button class="tab-button" data-tab="indoor">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+          <path d="M9 22V12h6v10"/>
+        </svg>
+        Indoor
+      </button>
+      <button class="tab-button" data-tab="analytics">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+          <path d="M3 3v18h18"/>
+          <path d="M18 17V9"/>
+          <path d="M13 17V5"/>
+          <path d="M8 17v-3"/>
+        </svg>
+        Analytics
+      </button>
+      <button class="tab-button" data-tab="notifications">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2z"/>
+          <path d="M18 16v-5a6 6 0 10-12 0v5l-2 2h16l-2-2z"/>
+        </svg>
+        Notifications
+      </button>
+    </div>
+
+    <!-- Overview Page -->
+    <div class="tab-content active" id="overview-content">
+      
+      <!-- New Overview Design -->
+      <div class="overview-hero">
+
+        <!-- Main Weather Display -->
+        <div class="hero-weather-card">
+          <!-- Integrated Header -->
+          <div class="card-header-integrated">
+            <h1 class="hero-greeting" id="hero-greeting">Good Morning</h1>
+            <p class="hero-date" id="hero-date">Saturday, 11 January 2026</p>
+            <p class="hero-location">📍 Ludvika, Dalarna</p>
+          </div>
+
+          <div class="hero-weather-visual">
+            <!-- Large Weather Icon -->
+            <div class="hero-icon-container">
+              <div class="hero-weather-icon" id="hero-main-icon">🌤️</div>
+              <div class="hero-icon-glow"></div>
+            </div>
+            
+            <!-- Temperature Display -->
+            <div class="hero-temp-display">
+              <div class="hero-current-temp" id="hero-current-temp">-16°</div>
+              <div class="hero-temp-unit">celsius</div>
+            </div>
+          </div>
+
+          <!-- Weather Description -->
+          <div class="hero-weather-info">
+            <h2 class="hero-condition-text" id="hero-condition-text">Clear Sky</h2>
+            <p class="hero-weather-desc" id="hero-weather-desc">Pleasant weather with clear skies. Pressure stable.</p>
+            <p class="hero-feels-like" id="hero-feels-like-text">Feels like -20°C</p>
+            
+            <!-- Weather Stats Row -->
+            <div class="hero-stats-row">
+              <div class="hero-stat">
+                <div class="hero-stat-icon">💧</div>
+                <div class="hero-stat-content">
+                  <div class="hero-stat-value" id="hero-stat-humidity">76%</div>
+                  <div class="hero-stat-label">Humidity</div>
+                </div>
+              </div>
+              
+              <div class="hero-stat">
+                <div class="hero-stat-icon">💨</div>
+                <div class="hero-stat-content">
+                  <div class="hero-stat-value" id="hero-stat-wind">2.3 m/s</div>
+                  <div class="hero-stat-label">Wind</div>
+                </div>
+              </div>
+              
+              <div class="hero-stat">
+                <div class="hero-stat-icon">🎈</div>
+                <div class="hero-stat-content">
+                  <div class="hero-stat-value" id="hero-stat-pressure">1004 hPa</div>
+                  <div class="hero-stat-label">Pressure</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Precipitation Card (only show if raining/snowing) -->
+        <div class="hero-precipitation-card" id="hero-precipitation-card" style="display: none;">
+          <div class="precip-icon" id="precip-icon">🌧️</div>
+          <div class="precip-content">
+            <div class="precip-amount" id="precip-amount">2.5 mm</div>
+            <div class="precip-label" id="precip-label">Rain in last hour</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Stats Grid -->
+      <div class="overview-quick-stats">
+        <div class="quick-stat-card">
+          <div class="quick-stat-icon">🌡️</div>
+          <div class="quick-stat-content">
+            <div class="quick-stat-value" id="quick-indoor-temp">--°C</div>
+            <div class="quick-stat-label">Indoor Temp</div>
+          </div>
+        </div>
+        
+        <div class="quick-stat-card">
+          <div class="quick-stat-icon">💨</div>
+          <div class="quick-stat-content">
+            <div class="quick-stat-value" id="quick-indoor-co2">-- ppm</div>
+            <div class="quick-stat-label">CO₂ Level</div>
+          </div>
+        </div>
+        
+        <div class="quick-stat-card">
+          <div class="quick-stat-icon">🌌</div>
+          <div class="quick-stat-content">
+            <div class="quick-stat-value" id="quick-aurora">--%</div>
+            <div class="quick-stat-label">Aurora Chance</div>
+          </div>
+        </div>
+        
+        <div class="quick-stat-card" id="warnings-card" onclick="toggleWarningsPanel()" style="cursor: pointer;">
+          <div class="quick-stat-icon">⚠️</div>
+          <div class="quick-stat-content">
+            <div class="quick-stat-value" id="quick-warnings">0</div>
+            <div class="quick-stat-label">Active Warnings</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aurora Compact Card for Overview -->
+      <div class="overview-aurora-card" style="margin-top: 12px; padding: 14px 16px; background: rgba(30, 35, 45, 0.8); backdrop-filter: blur(16px); border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 22px;">🌌</span>
+            <span style="font-size: 15px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">Aurora Borealis</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; background: rgba(147, 51, 234, 0.2); padding: 4px 10px; border-radius: 16px; border: 1px solid rgba(147, 51, 234, 0.4);">
+            <span style="font-size: 10px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase;">KP</span>
+            <span id="overview-kp-value" style="font-size: 15px; font-weight: 700; color: #a78bfa;">--</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="font-size: 28px; font-weight: 700; color: #a78bfa;" id="overview-aurora-probability">--%</div>
+          <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6); line-height: 1.4;" id="overview-aurora-summary">Analyzing space weather conditions...</div>
+        </div>
+      </div>
+
+      <!-- Expandable Warnings Panel -->
+      <div id="warnings-panel" class="warnings-panel" style="display: none;">
+        <div class="warnings-panel-header">
+          <h3>⚠️ Active Weather Warnings</h3>
+          <button class="warnings-close-btn" onclick="toggleWarningsPanel()">✕</button>
+        </div>
+        <div id="warnings-list" class="warnings-list">
+          <!-- Warnings will be populated here -->
+        </div>
+      </div>
+
+      <!-- 24-Hour Forecast Timeline -->
+      <div style="margin-top: 16px; padding: 16px; background: rgba(30, 35, 45, 0.75); backdrop-filter: blur(16px); border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);">
+        <h3 style="font-size: 15px; font-weight: 600; color: rgba(255, 255, 255, 0.9); margin-bottom: 12px; text-align: center;">24-Hour Temperature Forecast</h3>
+        <div style="position: relative; height: 200px; width: 100%;">
+          <canvas id="forecast-timeline-chart"></canvas>
+        </div>
+      </div>
+      
+    </div>
+
+    <!-- Notifications Page -->
+    <div class="tab-content" id="notifications-content">
+      <div class="notifications-grid">
+        <div class="notification-card">
+          <div class="card-header"><h2>🔔 Notification Settings</h2></div>
+          <div class="notification-content">
+            <div class="notify-row">
+              <label class="notify-label">CO₂ threshold (ppm)</label>
+              <div class="notify-control">
+                <input type="checkbox" id="notify-co2-enabled">
+                <input type="number" id="notify-co2-threshold" min="400" max="3000" step="50" placeholder="800">
+                <select id="notify-co2-cooldown" class="cooldown-select">
+                  <option value="1800">Every 30 min</option>
+                  <option value="3600">Every hour</option>
+                  <option value="10800">Every 3 hours</option>
+                  <option value="21600">Every 6 hours</option>
+                  <option value="43200">Every 12 hours</option>
+                  <option value="86400">Once per day</option>
+                </select>
+                <label><input type="checkbox" id="notify-co2-once"> Only once</label>
+              </div>
+            </div>
+
+            <div class="notify-row">
+              <label class="notify-label">Aurora chance (≥%)</label>
+              <div class="notify-control">
+                <input type="checkbox" id="notify-aurora-enabled">
+                <input type="number" id="notify-aurora-threshold" min="1" max="100" step="1" placeholder="30">
+                <select id="notify-aurora-cooldown" class="cooldown-select">
+                  <option value="3600">Every hour</option>
+                  <option value="7200">Every 2 hours</option>
+                  <option value="14400">Every 4 hours</option>
+                  <option value="43200">Every 12 hours</option>
+                  <option value="86400">Once per day</option>
+                </select>
+                <label><input type="checkbox" id="notify-aurora-once"> Only once</label>
+              </div>
+            </div>
+
+            <div class="notify-row">
+              <label class="notify-label">Aurora KP (≥)</label>
+              <div class="notify-control">
+                <input type="checkbox" id="notify-kp-enabled">
+                <input type="number" id="notify-kp-threshold" min="1" max="9" step="1" placeholder="5">
+                <select id="notify-kp-cooldown" class="cooldown-select">
+                  <option value="7200">Every 2 hours</option>
+                  <option value="10800">Every 3 hours</option>
+                  <option value="21600">Every 6 hours</option>
+                  <option value="86400">Once per day</option>
+                </select>
+                <label><input type="checkbox" id="notify-kp-once"> Only once</label>
+              </div>
+            </div>
+
+            <div class="notify-row">
+              <label class="notify-label">SMHI warnings (min severity)</label>
+              <div class="notify-control">
+                <input type="checkbox" id="notify-smhi-enabled">
+                <select id="notify-smhi-severity">
+                  <option value="1">Level 1 (Yellow)</option>
+                  <option value="2">Level 2 (Orange)</option>
+                  <option value="3">Level 3 (Red)</option>
+                </select>
+                <select id="notify-smhi-cooldown" class="cooldown-select">
+                  <option value="10800">Every 3 hours</option>
+                  <option value="21600">Every 6 hours</option>
+                  <option value="43200">Every 12 hours</option>
+                  <option value="86400">Once per day</option>
+                </select>
+                <label><input type="checkbox" id="notify-smhi-once"> Only once</label>
+              </div>
+            </div>
+
+            <div class="notify-row">
+              <label class="notify-label">Low humidity (≤%)</label>
+              <div class="notify-control">
+                <input type="checkbox" id="notify-lowhum-enabled">
+                <input type="number" id="notify-lowhum-threshold" min="10" max="60" step="1" placeholder="30">
+                <select id="notify-lowhum-cooldown" class="cooldown-select">
+                  <option value="7200">Every 2 hours</option>
+                  <option value="14400">Every 4 hours</option>
+                  <option value="43200">Every 12 hours</option>
+                  <option value="86400">Once per day</option>
+                </select>
+                <label><input type="checkbox" id="notify-lowhum-once"> Only once</label>
+              </div>
+            </div>
+
+            <div class="notify-actions">
+              <button id="notify-setup" class="btn-primary" style="font-size: 18px; padding: 16px 32px; width: 100%; margin-bottom: 16px;">
+                🔔 Turn On Notifications
+              </button>
+              <div class="notify-status" id="notify-status" style="text-align: center; margin-bottom: 16px;"></div>
+              <details style="margin-top: 16px;">
+                <summary style="cursor: pointer; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 12px;">⚙️ Advanced Settings</summary>
+                <div style="padding: 12px;">
+                  <button id="notify-save" class="btn-secondary" style="width: 100%; margin-bottom: 8px;">Save Settings</button>
+                  <button id="notify-reset" class="btn-warning" style="width: 100%;">Reset & Reconfigure</button>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Active Notifications Management -->
+        <div class="notification-card">
+          <div class="card-header"><h2>📱 Active Notifications</h2></div>
+          <div class="notification-content">
+            <div id="active-notifications-list">
+              <div class="loading-message">Loading active notifications...</div>
+            </div>
+            <div class="active-notifications-actions" style="margin-top: 16px;">
+              <button id="refresh-notifications" class="btn-secondary" style="width: 100%; margin-bottom: 8px;">🔄 Refresh List</button>
+              <button id="clear-all-notifications" class="btn-warning" style="width: 100%;">🗑️ Remove All Devices</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Outdoor Page (existing content) -->
+    <div class="tab-content" id="outdoor-content">
+    
+    <!-- Left Column: Weather + Aurora -->
+    <div class="left-column">
+    
+    <!-- Main Weather Card -->
+    <div class="main-weather-card">
+      <div class="user-welcome">
+        <div class="welcome-text">
+          <div class="welcome-label">Welcome</div>
+          <div class="welcome-name" id="user-name">Weather Station Ludvika</div>
+        </div>
+      </div>
+
+      <div class="forecast-label">Weather Forecast</div>
+      
+      <!-- Animated Weather Icon -->
+      <div class="main-weather-icon-container">
+        <div class="weather-icon-animated" id="main-weather-icon">
+          <!-- Default rain icon (will be updated by JavaScript) -->
+          <div class="weather-icon-rain">
+            <div class="cloud"></div>
+            <div class="raindrop"></div>
+            <div class="raindrop"></div>
+            <div class="raindrop"></div>
+            <div class="raindrop"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="main-weather-content">
+        <div class="current-weather-info">
+          <h1 class="weather-condition" id="main-condition">Current Weather</h1>
+          <p class="weather-description" id="weather-desc">Loading weather data...</p>
+          
+          <div class="weather-stats">
+            <div class="stat-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2" fill="none"/>
+              </svg>
+              <span id="humidity-pct">--%</span>
+            </div>
+            <div class="stat-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                <path d="M3 15h18M8 15v6m8-6v6" stroke="white" stroke-width="2" fill="none"/>
+              </svg>
+              <span id="pressure-val">-- hPa</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="main-temp-display">
+          <div class="location-name" id="main-location">Outdoor Station</div>
+          <div class="main-temperature" id="main-temp">--°C</div>
+          <div class="temp-range-24h">
+            <span class="temp-high">H: <span id="temp-max-24h">--</span>°</span>
+            <span class="temp-low">L: <span id="temp-min-24h">--</span>°</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sensor Warnings -->
+      <div class="sensor-warnings" id="sensor-warnings-main"></div>
+    </div>
+
+    <!-- Northern Lights / Aurora Card -->
+    <div class="aurora-card-main">
+      <!-- Compact Header -->
+      <div class="aurora-header-compact">
+        <div class="aurora-title-row">
+          <span class="aurora-icon">🌌</span>
+          <span class="aurora-title">Aurora</span>
+          <div class="aurora-kp-badge">
+            <span class="kp-label">KP</span>
+            <span class="kp-value" id="kp-value">--</span>
+          </div>
+        </div>
+        <div class="aurora-probability-compact">
+          <span class="probability-value-compact" id="aurora-probability">--%</span>
+          <span class="probability-label-compact">Chance</span>
+        </div>
+      </div>
+
+      <!-- Quick Summary -->
+      <div class="aurora-quick-summary" id="activity-description">Analyzing space weather conditions...</div>
+
+      <!-- Expandable Details -->
+      <details class="aurora-details">
+        <summary class="aurora-details-toggle">📊 Technical Data & Metrics</summary>
+        
+        <div class="aurora-details-content">
+          <!-- OVATION Model Forecast -->
+          <div class="ovation-forecast" style="margin-bottom: 15px; padding: 12px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 8px; border: 1px solid rgba(100,200,255,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 11px; color: #64b5f6; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">🛰️ NOAA OVATION Model</div>
+                <div style="font-size: 24px; font-weight: bold; color: #ffffff;" id="ovation-probability">--%</div>
+                <div style="font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 2px;" id="ovation-update-time">Updates every ~15 min</div>
+              </div>
+              <div style="font-size: 11px; color: rgba(255,255,255,0.7); text-align: right; max-width: 200px; line-height: 1.4;">
+                Real-time aurora forecast for Ludvika based on satellite observations
+              </div>
+            </div>
+          </div>
+
+          <!-- Probability Breakdown -->
+          <div class="aurora-probability-display">
+            <div class="probability-breakdown">
+              <div class="breakdown-item">
+                <span class="breakdown-label">Geomagnetic</span>
+                <div class="breakdown-bar">
+                  <div class="breakdown-fill" id="geomag-bar" style="width: 0%"></div>
+                </div>
+                <span class="breakdown-value" id="geomag-percent">--%</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">Weather</span>
+                <div class="breakdown-bar">
+                  <div class="breakdown-fill" id="weather-bar" style="width: 0%"></div>
+                </div>
+                <span class="breakdown-value" id="weather-percent">--%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Technical Metrics Grid -->
+          <div class="aurora-metrics-grid">
+            <!-- Solar Wind -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-icon">🌪️</span>
+                <span class="metric-name">Solar Wind</span>
+              </div>
+              <div class="metric-value" id="solar-wind-value">-- km/s</div>
+              <div class="metric-status" id="solar-wind-status">--</div>
+            </div>
+
+            <!-- Bz Component -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-icon">🧲</span>
+                <span class="metric-name">Bz Component</span>
+              </div>
+              <div class="metric-value" id="bz-value">-- nT</div>
+              <div class="metric-status" id="bz-status">--</div>
+            </div>
+
+            <!-- Cloud Cover -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-icon">☁️</span>
+                <span class="metric-name">Cloud Cover</span>
+              </div>
+              <div class="metric-value" id="cloud-value">-- /8</div>
+              <div class="metric-status" id="cloud-status">--</div>
+            </div>
+
+            <!-- Visibility -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-icon">👁️</span>
+                <span class="metric-name">Visibility</span>
+              </div>
+              <div class="metric-value" id="visibility-value">-- km</div>
+              <div class="metric-status" id="visibility-status">--</div>
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+    
+    </div><!-- End Left Column -->
+
+    <!-- Location Cards Section -->
+    <div class="location-cards">
+      
+      <!-- Sun Times Card -->
+      <div class="location-card sun-card">
+        <div class="card-header">
+          <div class="card-location">Daylight</div>
+        </div>
+        
+        <!-- Sun Arc Animation -->
+        <div class="sun-arc-container">
+          <svg class="sun-arc-svg" viewBox="0 0 240 140" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <!-- Glow effects -->
+              <filter id="sun-glow">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              <filter id="moon-glow">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              <!-- Earth image pattern -->
+              <pattern id="earthTexture" x="0" y="0" width="1" height="1">
+                <image href="https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/The_Earth_seen_from_Apollo_17.jpg/240px-The_Earth_seen_from_Apollo_17.jpg" 
+                       x="-12" y="-12" width="72" height="72" preserveAspectRatio="xMidYMid slice"/>
+              </pattern>
+              <radialGradient id="atmosphereGlow" cx="50%" cy="50%">
+                <stop offset="70%" style="stop-color:#64B5F6;stop-opacity:0" />
+                <stop offset="100%" style="stop-color:#42A5F5;stop-opacity:0.4" />
+              </radialGradient>
+              <linearGradient id="dayGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#FDB813;stop-opacity:0.2" />
+                <stop offset="50%" style="stop-color:#FDB813;stop-opacity:0.6" />
+                <stop offset="100%" style="stop-color:#FDB813;stop-opacity:0.2" />
+              </linearGradient>
+            </defs>
+            
+            <!-- Day arc (top half - solid line with glow) -->
+            <path d="M 80 70 A 40 40 0 0 1 160 70" stroke="url(#dayGradient)" stroke-width="3" fill="none" opacity="0.6" stroke-linecap="round"/>
+            
+            <!-- Night arc (bottom half - dotted line, dimmer) -->
+            <path d="M 160 70 A 40 40 0 0 1 80 70" stroke="rgba(148, 163, 184, 0.3)" stroke-width="2.5" fill="none" stroke-dasharray="6,4" opacity="0.4"/>
+            
+            <!-- Animation paths (invisible, for sun movement) -->
+            <path id="day-arc" d="M 80 70 A 40 40 0 0 1 160 70" stroke="none" fill="none"/>
+            <path id="night-arc" d="M 160 70 A 40 40 0 0 1 80 70" stroke="none" fill="none"/>
+            
+            <!-- Earth in center -->
+            <g id="earth" transform="translate(120, 70)">
+              <!-- Earth with real image -->
+              <circle cx="0" cy="0" r="24" fill="url(#earthTexture)"/>
+            </g>
+            
+            <!-- Sunrise label and time (left side) -->
+            <text x="35" y="58" font-size="11" fill="rgba(253, 184, 19, 0.7)" font-weight="600" text-anchor="middle">Sunrise</text>
+            <text id="sunrise-time-label" x="35" y="73" font-size="18" fill="rgba(253, 184, 19, 0.9)" font-weight="700" text-anchor="middle" dominant-baseline="middle">--:--</text>
+            
+            <!-- Sunset label and time (right side) -->
+            <text x="205" y="58" font-size="11" fill="rgba(148, 163, 184, 0.7)" font-weight="600" text-anchor="middle">Sunset</text>
+            <text id="sunset-time-label" x="205" y="73" font-size="18" fill="rgba(148, 163, 184, 0.9)" font-weight="700" text-anchor="middle" dominant-baseline="middle">--:--</text>
+            
+            <!-- Moving sun/moon icon -->
+            <g id="sun-position-group" transform="translate(30, 90)">
+              <circle id="sun-position" cx="0" cy="0" r="7" fill="#FDB813" filter="url(#sun-glow)"/>
+              <!-- Sun rays -->
+              <g id="sun-rays" opacity="1">
+                <line x1="0" y1="-12" x2="0" y2="-15" stroke="#FDB813" stroke-width="2" stroke-linecap="round"/>
+                <line x1="0" y1="12" x2="0" y2="15" stroke="#FDB813" stroke-width="2" stroke-linecap="round"/>
+                <line x1="-12" y1="0" x2="-15" y2="0" stroke="#FDB813" stroke-width="2" stroke-linecap="round"/>
+                <line x1="12" y1="0" x2="15" y2="0" stroke="#FDB813" stroke-width="2" stroke-linecap="round"/>
+                <line x1="-8.5" y1="-8.5" x2="-11" y2="-11" stroke="#FDB813" stroke-width="2" stroke-linecap="round"/>
+                <line x1="8.5" y1="8.5" x2="11" y2="11" stroke="#FDB813" stroke-width="2" stroke-linecap="round"/>
+                <line x1="-8.5" y1="8.5" x2="-11" y2="11" stroke="#FDB813" stroke-width="2" stroke-linecap="round"/>
+                <line x1="8.5" y1="-8.5" x2="11" y2="-11" stroke="#FDB813" stroke-width="2" stroke-linecap="round"/>
+              </g>
+            </g>
+          </svg>
+        </div>
+        
+        <div class="sun-times">
+          <div class="sun-time-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="sun-icon">
+              <circle cx="12" cy="12" r="5" fill="#FDB813"/>
+              <path d="M12 1v3m0 16v3M4.22 4.22l2.12 2.12m11.32 11.32l2.12 2.12M1 12h3m16 0h3M4.22 19.78l2.12-2.12m11.32-11.32l2.12-2.12" stroke="#FDB813" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div class="sun-time-info">
+              <div class="sun-label">Sunrise</div>
+              <div class="sun-value" id="sunrise-time">--:--</div>
+            </div>
+          </div>
+          <div class="sun-time-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="moon-icon">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="#94A3B8" stroke="#94A3B8" stroke-width="2"/>
+            </svg>
+            <div class="sun-time-info">
+              <div class="sun-label">Sunset</div>
+              <div class="sun-value" id="sunset-time">--:--</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Moon Phase Card -->
+      <div class="location-card moon-card">
+        <div class="card-header">
+          <div class="card-location">Moon Phase</div>
+          <div class="card-condition" id="moon-phase-name">--</div>
+        </div>
+        <div class="moon-display">
+          <svg width="80" height="80" viewBox="0 0 100 100">
+            <defs>
+              <clipPath id="moonClip">
+                <circle cx="50" cy="50" r="35"/>
+              </clipPath>
+            </defs>
+            <!-- Moon background -->
+            <circle cx="50" cy="50" r="35" fill="#1a1a1a"/>
+            <!-- Moon image (oversized to hide white border) -->
+            <image href="moon-transparent.png" x="3" y="3" width="94" height="94" clip-path="url(#moonClip)" filter="drop-shadow(0 0 8px rgba(255,255,255,0.3))"/>
+            <!-- Shadow overlay for phases -->
+            <path id="moon-shadow" d="" fill="rgba(0, 0, 0, 0.7)" clip-path="url(#moonClip)"/>
+          </svg>
+        </div>
+        <div class="moon-illumination" id="moon-illumination">--% illuminated</div>
+      </div>
+
+      <!-- SMHI Warnings Card -->
+      <div class="location-card smhi-card">
+        <div class="card-header">
+          <div class="card-location">SMHI Warnings</div>
+          <div class="card-region" id="smhi-region">Dalarna</div>
+        </div>
+        <div class="card-alerts" id="smhi-warnings"></div>
+      </div>
+
+    </div>
+
+  </div>
+  <!-- End of Outdoor Content -->
+
+  <!-- Indoor Page -->
+  <div class="tab-content" id="indoor-content">
+    <div class="indoor-grid">
+      
+      <!-- Indoor Climate Card -->
+      <div class="indoor-card climate-card">
+        <div class="card-header">
+          <h2>🏠 Indoor Climate</h2>
+        </div>
+        <div class="climate-metrics">
+          <div class="metric-item clickable" data-metric="temperature">
+            <div class="metric-icon">🌡️</div>
+            <div class="metric-data">
+              <div class="metric-label">Temperature</div>
+              <div class="metric-value" id="indoor-temp">--°C</div>
+            </div>
+          </div>
+          <div class="metric-item clickable" data-metric="humidity">
+            <div class="metric-icon">💧</div>
+            <div class="metric-data">
+              <div class="metric-label">Humidity</div>
+              <div class="metric-value" id="indoor-humidity">--%</div>
+            </div>
+          </div>
+          <div class="metric-item clickable" data-metric="pressure">
+            <div class="metric-icon">🎈</div>
+            <div class="metric-data">
+              <div class="metric-label">Pressure</div>
+              <div class="metric-value" id="indoor-pressure">-- hPa</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Air Quality Card -->
+      <div class="indoor-card air-quality-card">
+        <div class="card-header">
+          <h2>🌬️ Air Quality</h2>
+        </div>
+        <div class="air-quality-metrics">
+          <div class="air-metric clickable" data-metric="co2">
+            <div class="air-metric-header">
+              <span class="air-metric-label">CO₂ Level</span>
+              <span class="air-metric-status" id="co2-status">Good</span>
+            </div>
+            <div class="air-metric-value" id="co2-value">-- ppm</div>
+            <div class="air-metric-bar">
+              <div class="air-metric-fill" id="co2-bar" style="width: 0%"></div>
+            </div>
+            <div class="air-metric-scale">
+              <span>400</span>
+              <span>1000</span>
+              <span>2000</span>
+              <span>5000</span>
+            </div>
+          </div>
+          <div class="air-metric clickable" data-metric="tvoc">
+            <div class="air-metric-header">
+              <span class="air-metric-label">TVOC (Organic Compounds)</span>
+              <span class="air-metric-status" id="tvoc-status">Good</span>
+            </div>
+            <div class="air-metric-value" id="tvoc-value">-- ppb</div>
+            <div class="air-metric-bar">
+              <div class="air-metric-fill" id="tvoc-bar" style="width: 0%"></div>
+            </div>
+            <div class="air-metric-scale">
+              <span>0</span>
+              <span>220</span>
+              <span>500</span>
+              <span>1000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Indoor Warnings Card -->
+      <div class="indoor-card warnings-card">
+        <div class="card-header">
+          <h2>⚠️ Air Quality Alerts</h2>
+        </div>
+        <div class="indoor-warnings" id="indoor-warnings">
+          <div class="no-warnings">✓ All parameters normal</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Comparison Page -->
+  <div class="tab-content" id="compare-content">
+    <div class="overview-grid">
+      <div class="comparison-card">
+        <div class="card-header">
+          <h2>🌡️ Temperature Comparison</h2>
+        </div>
+        <div class="comparison-content">
+          <div class="comparison-item">
+            <div class="comparison-label">🏠 Indoor</div>
+            <div class="comparison-value with-trend"><span id="overview-indoor-temp">--°C</span><span class="trend-arrow" id="trend-temp-indoor"></span></div>
+            <canvas class="sparkline" id="spark-temp-indoor" width="100" height="30"></canvas>
+            <div class="sparkline-label">Last 24h</div>
+          </div>
+          <div class="comparison-divider"></div>
+          <div class="comparison-item">
+            <div class="comparison-label">🌤️ Outdoor</div>
+            <div class="comparison-value with-trend"><span id="overview-outdoor-temp">--°C</span><span class="trend-arrow" id="trend-temp-outdoor"></span></div>
+            <canvas class="sparkline" id="spark-temp-outdoor" width="100" height="30"></canvas>
+            <div class="sparkline-label">Last 24h</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="comparison-card">
+        <div class="card-header">
+          <h2>💧 Humidity Comparison</h2>
+        </div>
+        <div class="comparison-content">
+          <div class="comparison-item">
+            <div class="comparison-label">🏠 Indoor</div>
+            <div class="comparison-value with-trend"><span id="overview-indoor-humidity">--%</span><span class="trend-arrow" id="trend-hum-indoor"></span></div>
+            <canvas class="sparkline" id="spark-hum-indoor" width="100" height="30"></canvas>
+            <div class="sparkline-label">Last 24h</div>
+          </div>
+          <div class="comparison-divider"></div>
+          <div class="comparison-item">
+            <div class="comparison-label">🌤️ Outdoor</div>
+            <div class="comparison-value with-trend"><span id="overview-outdoor-humidity">--%</span><span class="trend-arrow" id="trend-hum-outdoor"></span></div>
+            <canvas class="sparkline" id="spark-hum-outdoor" width="100" height="30"></canvas>
+            <div class="sparkline-label">Last 24h</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="comparison-card">
+        <div class="card-header">
+          <h2>🎈 Pressure Comparison</h2>
+        </div>
+        <div class="comparison-content">
+          <div class="comparison-item">
+            <div class="comparison-label">🏠 Indoor</div>
+            <div class="comparison-value with-trend"><span id="overview-indoor-pressure">-- hPa</span><span class="trend-arrow" id="trend-press-indoor"></span></div>
+            <canvas class="sparkline" id="spark-press-indoor" width="100" height="30"></canvas>
+            <div class="sparkline-label">Last 24h</div>
+          </div>
+          <div class="comparison-divider"></div>
+          <div class="comparison-item">
+            <div class="comparison-label">🌤️ Outdoor</div>
+            <div class="comparison-value with-trend"><span id="overview-outdoor-pressure">-- hPa</span><span class="trend-arrow" id="trend-press-outdoor"></span></div>
+            <canvas class="sparkline" id="spark-press-outdoor" width="100" height="30"></canvas>
+            <div class="sparkline-label">Last 24h</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- End of Indoor Content -->
+
+  <!-- Analytics Page -->
+  <div class="tab-content" id="analytics-content">
+    
+    <!-- Compact Analytics Layout -->
+    <div class="analytics-compact">
+      
+      <!-- Top Control Bar -->
+      <div class="analytics-control-bar">
+        <div class="source-toggle">
+          <button class="source-btn active" data-source="indoor">🏠 Indoor</button>
+          <button class="source-btn" data-source="outdoor">🌳 Outdoor</button>
+        </div>
+        
+        <div class="metric-pills">
+          <button class="metric-pill active" data-metric="temperature">🌡️ Temperature</button>
+          <button class="metric-pill" data-metric="humidity">💧 Humidity</button>
+          <button class="metric-pill" data-metric="pressure">🎈 Pressure</button>
+          <button class="metric-pill indoor-only" data-metric="co2">🌬️ CO₂</button>
+          <button class="metric-pill indoor-only" data-metric="tvoc">💨 TVOC</button>
+        </div>
+        
+        <div class="time-pills">
+          <button class="time-pill active" data-range="24h">24h</button>
+          <button class="time-pill" data-range="2d">2d</button>
+          <button class="time-pill" data-range="4d">4d</button>
+          <button class="time-pill" data-range="1w">1w</button>
+          <button class="time-pill" data-range="1m">1m</button>
+        </div>
+      </div>
+      
+      <!-- Stats Row -->
+      <div class="analytics-stats-row">
+        <div class="mini-stat">
+          <span class="mini-stat-label">Current</span>
+          <span class="mini-stat-value" id="stat-current">--</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-stat-label">Avg</span>
+          <span class="mini-stat-value" id="stat-average">--</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-stat-label">Min</span>
+          <span class="mini-stat-value" id="stat-min">--</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-stat-label">Max</span>
+          <span class="mini-stat-value" id="stat-max">--</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-stat-label">Trend</span>
+          <span class="mini-stat-value" id="stat-trend">--</span>
+        </div>
+      </div>
+      
+      <!-- Chart Area -->
+      <div class="analytics-chart-area">
+        <canvas id="main-analytics-chart"></canvas>
+      </div>
+      
+      <!-- Footer Info -->
+      <div class="analytics-footer">
+        <span id="chart-info-text">Indoor Temperature • 24 Hours</span>
+        <span id="data-points-info">-- points</span>
+      </div>
+      
+    </div>
+  </div>
+  <!-- End of Analytics Content -->
+
+  <!-- History Modal -->
+  <div id="history-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close" id="modal-close-btn">×</button>
+      <div class="modal-header">
+        <h3 id="modal-title">24h History</h3>
+        <div class="modal-controls">
+          <div class="time-range-selector">
+            <button class="range-btn active" data-range="24h">24h</button>
+            <button class="range-btn" data-range="2d">2 days</button>
+            <button class="range-btn" data-range="4d">4 days</button>
+            <button class="range-btn" data-range="1w">1 week</button>
+            <button class="range-btn" data-range="1m">1 month</button>
+          </div>
+          <div class="average-display">
+            <span class="average-label">Average:</span>
+            <span class="average-value" id="average-value">--</span>
+          </div>
+        </div>
+      </div>
+      <canvas id="history-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Fallback Tab Navigation (in case app.js module fails) -->
+  <script>
+  (function() {
+    const tabs = ['overview', 'compare', 'outdoor', 'indoor', 'analytics', 'notifications'];
+    
+    function switchToTab(tabName) {
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      const activeButton = document.querySelector('.tab-button[data-tab="' + tabName + '"]');
+      if (activeButton) activeButton.classList.add('active');
+      
+      const activeContent = document.getElementById(tabName + '-content');
+      if (activeContent) activeContent.classList.add('active');
+      
+      // Center tab button
+      const nav = document.querySelector('.tab-navigation');
+      if (nav && activeButton && nav.scrollWidth > nav.clientWidth) {
+        const targetLeft = activeButton.offsetLeft + (activeButton.offsetWidth / 2) - (nav.clientWidth / 2);
+        nav.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+      }
+    }
+    
+    // Make globally available
+    window.switchToTab = switchToTab;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      // Tab button clicks
+      document.querySelectorAll('.tab-button').forEach(function(button) {
+        button.addEventListener('click', function() {
+          switchToTab(this.getAttribute('data-tab'));
+        });
+      });
+      
+      // Note: Swipe navigation is handled by app.js - do not duplicate here
+      
+      // Fallback data loaders
+      loadIndoorData();
+      loadOutdoorData();
+      loadComparisonData();
+      loadOutdoorPageData();
+      setInterval(function() { loadIndoorData(); loadOutdoorData(); loadComparisonData(); }, 60000);
+    });
+    
+    // Indoor data loader
+    function loadIndoorData() {
+      fetch('/api/indoor').then(function(r) { return r.json(); }).then(function(data) {
+        if (document.getElementById('indoor-temp')) 
+          document.getElementById('indoor-temp').textContent = data.temperature + '°C';
+        if (document.getElementById('indoor-humidity')) 
+          document.getElementById('indoor-humidity').textContent = data.humidity + '%';
+        if (document.getElementById('indoor-pressure')) 
+          document.getElementById('indoor-pressure').textContent = data.pressure + ' hPa';
+        
+        // Also update comparison page indoor values
+        if (document.getElementById('overview-indoor-temp'))
+          document.getElementById('overview-indoor-temp').textContent = data.temperature + '°C';
+        if (document.getElementById('overview-indoor-humidity'))
+          document.getElementById('overview-indoor-humidity').textContent = data.humidity + '%';
+        if (document.getElementById('overview-indoor-pressure'))
+          document.getElementById('overview-indoor-pressure').textContent = data.pressure + ' hPa';
+        
+        // CO2
+        var co2Value = document.getElementById('co2-value');
+        var co2Status = document.getElementById('co2-status');
+        var co2Bar = document.getElementById('co2-bar');
+        if (co2Value && data.eco2 != null) {
+          co2Value.textContent = data.eco2 + ' ppm';
+          co2Bar.style.width = Math.min((data.eco2 / 5000) * 100, 100) + '%';
+          if (data.eco2 > 2000) { co2Status.textContent = 'Poor'; co2Status.className = 'air-metric-status danger'; }
+          else if (data.eco2 > 1000) { co2Status.textContent = 'Elevated'; co2Status.className = 'air-metric-status warning'; }
+          else { co2Status.textContent = 'Good'; co2Status.className = 'air-metric-status'; }
+        }
+        
+        // TVOC
+        var tvocValue = document.getElementById('tvoc-value');
+        var tvocStatus = document.getElementById('tvoc-status');
+        var tvocBar = document.getElementById('tvoc-bar');
+        if (tvocValue && data.tvoc != null) {
+          tvocValue.textContent = data.tvoc + ' ppb';
+          tvocBar.style.width = Math.min((data.tvoc / 1000) * 100, 100) + '%';
+          if (data.tvoc > 500) { tvocStatus.textContent = 'Poor'; tvocStatus.className = 'air-metric-status danger'; }
+          else if (data.tvoc > 220) { tvocStatus.textContent = 'Moderate'; tvocStatus.className = 'air-metric-status warning'; }
+          else { tvocStatus.textContent = 'Good'; tvocStatus.className = 'air-metric-status'; }
+        }
+        
+        // Warnings
+        var warningsEl = document.getElementById('indoor-warnings');
+        if (warningsEl && data.air_quality_warnings) {
+          if (data.air_quality_warnings.length === 0) {
+            warningsEl.innerHTML = '<div class="no-warnings">✓ All parameters normal</div>';
+          } else {
+            var msgs = {
+              'high_co2': '🔴 CO₂ levels are high!',
+              'elevated_co2': '⚠️ CO₂ levels are elevated.',
+              'high_tvoc': '🔴 High TVOC detected!',
+              'elevated_tvoc': '⚠️ Elevated TVOC levels.',
+              'high_humidity': '💧 Humidity is high.',
+              'low_humidity': '🏜️ Low humidity.',
+              'condensation_risk': '❄️ Condensation risk.'
+            };
+            warningsEl.innerHTML = data.air_quality_warnings.map(function(w) {
+              return '<div class="warning-item">' + (msgs[w] || w) + '</div>';
+            }).join('');
+          }
+        }
+      }).catch(function(e) { console.error('Indoor fetch failed:', e); });
+    }
+    
+    // Outdoor data loader (for comparison page)
+    function loadOutdoorData() {
+      fetch('/api/current').then(function(r) { return r.json(); }).then(function(data) {
+        // Comparison page outdoor values - handle null values
+        if (document.getElementById('overview-outdoor-temp'))
+          document.getElementById('overview-outdoor-temp').textContent = (data.temperature !== null ? data.temperature.toFixed(1) + '°C' : '--°C');
+        if (document.getElementById('overview-outdoor-humidity'))
+          document.getElementById('overview-outdoor-humidity').textContent = (data.humidity !== null ? data.humidity.toFixed(0) + '%' : '--%');
+        if (document.getElementById('overview-outdoor-pressure'))
+          document.getElementById('overview-outdoor-pressure').textContent = (data.pressure !== null ? data.pressure.toFixed(1) + ' hPa' : '-- hPa');
+      }).catch(function(e) { console.error('Outdoor fetch failed:', e); });
+    }
+    
+    // Comparison page data
+    function loadComparisonData() {
+      // Data is already loaded by loadIndoorData and loadOutdoorData
+      // This function can be used for sparklines in the future
+    }
+    
+    // Outdoor page data loader
+    function loadOutdoorPageData() {
+      // Main weather card
+      fetch('/api/current').then(function(r) { return r.json(); }).then(function(data) {
+        if (document.getElementById('main-temp'))
+          document.getElementById('main-temp').textContent = Math.round(data.temperature) + '°C';
+        if (document.getElementById('humidity-pct'))
+          document.getElementById('humidity-pct').textContent = Math.round(data.humidity) + '%';
+        if (document.getElementById('pressure-val'))
+          document.getElementById('pressure-val').textContent = Math.round(data.pressure) + ' hPa';
+      }).catch(function(e) { console.error('Outdoor page current fetch failed:', e); });
+      
+      // Forecast data
+      fetch('/api/forecast').then(function(r) { return r.json(); }).then(function(data) {
+        if (document.getElementById('main-condition') && data.symbol) {
+          var conditions = {
+            1: 'Clear Sky', 2: 'Nearly Clear', 3: 'Partly Cloudy', 4: 'Partly Cloudy',
+            5: 'Cloudy', 6: 'Overcast', 7: 'Fog', 8: 'Light Rain', 9: 'Moderate Rain',
+            10: 'Heavy Rain', 11: 'Thunderstorm', 12: 'Sleet', 13: 'Snow Showers',
+            14: 'Snow', 15: 'Heavy Snow', 16: 'Heavy Snow', 17: 'Heavy Snow',
+            18: 'Light Rain', 19: 'Moderate Rain', 20: 'Heavy Rain', 21: 'Thunder',
+            22: 'Sleet', 23: 'Snow Showers', 24: 'Snow', 25: 'Heavy Snow', 26: 'Heavy Snow', 27: 'Heavy Snow'
+          };
+          document.getElementById('main-condition').textContent = conditions[data.symbol] || 'Weather';
+        }
+        if (document.getElementById('weather-desc') && data.wind_speed !== undefined) {
+          document.getElementById('weather-desc').textContent = 'Wind: ' + data.wind_speed + ' m/s, Visibility: ' + (data.visibility || '--') + ' km';
+        }
+      }).catch(function(e) { console.error('Outdoor page forecast fetch failed:', e); });
+      
+      // Min/max temperatures
+      fetch('/api/minmax').then(function(r) { return r.json(); }).then(function(data) {
+        if (document.getElementById('temp-max-24h') && data.max !== undefined)
+          document.getElementById('temp-max-24h').textContent = Math.round(data.max);
+        if (document.getElementById('temp-min-24h') && data.min !== undefined)
+          document.getElementById('temp-min-24h').textContent = Math.round(data.min);
+      }).catch(function(e) { console.error('Minmax fetch failed:', e); });
+      
+      // Aurora data
+      fetch('/api/aurora').then(function(r) { return r.json(); }).then(function(data) {
+        if (document.getElementById('kp-value') && data.kp_index !== undefined)
+          document.getElementById('kp-value').textContent = data.kp_index.toFixed(1);
+        if (document.getElementById('aurora-probability') && data.probability !== undefined)
+          document.getElementById('aurora-probability').textContent = Math.round(data.probability) + '%';
+        if (document.getElementById('activity-description') && data.description)
+          document.getElementById('activity-description').textContent = data.description;
+        
+        // Solar Wind
+        if (document.getElementById('solar-wind-value') && data.solar_wind_speed !== undefined) {
+          document.getElementById('solar-wind-value').textContent = Math.round(data.solar_wind_speed) + ' km/s';
+          var swStatus = data.solar_wind_speed > 500 ? 'Elevated' : (data.solar_wind_speed > 400 ? 'Moderate' : 'Quiet');
+          document.getElementById('solar-wind-status').textContent = swStatus;
+        }
+        
+        // Bz Component
+        if (document.getElementById('bz-value') && data.bz_component !== undefined) {
+          document.getElementById('bz-value').textContent = data.bz_component.toFixed(1) + ' nT';
+          var bzStatus = data.bz_component < -5 ? 'Favorable' : (data.bz_component < 0 ? 'Slightly South' : 'Northward');
+          document.getElementById('bz-status').textContent = bzStatus;
+        }
+        
+        // Cloud Cover
+        if (document.getElementById('cloud-value') && data.cloud_coverage !== undefined) {
+          document.getElementById('cloud-value').textContent = data.cloud_coverage + '/8';
+          var cloudStatus = data.cloud_coverage <= 2 ? 'Clear' : (data.cloud_coverage <= 5 ? 'Partly Cloudy' : 'Overcast');
+          document.getElementById('cloud-status').textContent = cloudStatus;
+        }
+        
+        // Visibility
+        if (document.getElementById('visibility-value') && data.visibility_km !== undefined) {
+          document.getElementById('visibility-value').textContent = data.visibility_km.toFixed(1) + ' km';
+          var visStatus = data.visibility_km > 10 ? 'Excellent' : (data.visibility_km > 5 ? 'Good' : 'Limited');
+          document.getElementById('visibility-status').textContent = visStatus;
+        }
+      }).catch(function(e) { console.error('Aurora fetch failed:', e); });
+      
+      // Sun times
+      fetch('/api/sun').then(function(r) { return r.json(); }).then(function(data) {
+        if (document.getElementById('sunrise-time')) 
+          document.getElementById('sunrise-time').textContent = data.sunrise || '--:--';
+        if (document.getElementById('sunset-time')) 
+          document.getElementById('sunset-time').textContent = data.sunset || '--:--';
+        if (document.getElementById('sunrise-time-label')) 
+          document.getElementById('sunrise-time-label').textContent = data.sunrise || '--:--';
+        if (document.getElementById('sunset-time-label')) 
+          document.getElementById('sunset-time-label').textContent = data.sunset || '--:--';
+      }).catch(function(e) { console.error('Sun fetch failed:', e); });
+      
+      // Moon phase
+      (function() {
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = now.getMonth() + 1;
+        var day = now.getDate();
+        
+        // Calculate moon phase (simplified algorithm)
+        var c = Math.floor(365.25 * year);
+        var e = Math.floor(30.6 * month);
+        var jd = c + e + day - 694039.09;
+        jd /= 29.5305882;
+        var phase = jd - Math.floor(jd);
+        var illumination = Math.round((1 - Math.cos(phase * 2 * Math.PI)) / 2 * 100);
+        
+        var phaseName = 'New Moon';
+        if (phase < 0.03 || phase > 0.97) phaseName = 'New Moon';
+        else if (phase < 0.22) phaseName = 'Waxing Crescent';
+        else if (phase < 0.28) phaseName = 'First Quarter';
+        else if (phase < 0.47) phaseName = 'Waxing Gibbous';
+        else if (phase < 0.53) phaseName = 'Full Moon';
+        else if (phase < 0.72) phaseName = 'Waning Gibbous';
+        else if (phase < 0.78) phaseName = 'Last Quarter';
+        else phaseName = 'Waning Crescent';
+        
+        if (document.getElementById('moon-phase-name'))
+          document.getElementById('moon-phase-name').textContent = phaseName;
+        if (document.getElementById('moon-illumination'))
+          document.getElementById('moon-illumination').textContent = illumination + '% illuminated';
+      })();
+      
+      // SMHI Warnings with expandable details
+      fetch('/api/smhi').then(function(r) { return r.json(); }).then(function(data) {
+        var warningsEl = document.getElementById('smhi-warnings');
+        if (warningsEl) {
+          if (!data.warnings || data.warnings.length === 0) {
+            warningsEl.innerHTML = '<div class="no-warnings" style="color: rgba(74, 222, 128, 0.9); padding: 12px;">✓ No active warnings</div>';
+          } else {
+            warningsEl.innerHTML = data.warnings.map(function(w, index) {
+              var color = w.severity === 3 ? '#ef4444' : (w.severity === 2 ? '#f59e0b' : '#fbbf24');
+              var severityText = w.severity === 3 ? 'Extreme' : (w.severity === 2 ? 'Moderate' : 'Minor');
+              var warningId = 'warning-' + index;
+              
+              return '<div class="warning-item expandable" onclick="toggleWarning(\'' + warningId + '\')" style="padding: 8px; margin: 4px 0; background: rgba(0,0,0,0.3); border-left: 3px solid ' + color + '; border-radius: 4px; cursor: pointer; transition: all 0.3s;">' +
+                '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+                  '<strong>' + (w.event || 'Warning') + '</strong>' +
+                  '<span style="font-size: 12px; opacity: 0.7;">' + severityText + ' ▼</span>' +
+                '</div>' +
+                '<div id="' + warningId + '" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">' +
+                  '<div style="margin-bottom: 6px;"><strong>Description:</strong><br/>' + (w.description || 'No description available') + '</div>' +
+                  (w.headline ? '<div style="margin-bottom: 6px;"><strong>Headline:</strong><br/>' + w.headline + '</div>' : '') +
+                  (w.instruction ? '<div style="margin-bottom: 6px;"><strong>Instructions:</strong><br/>' + w.instruction + '</div>' : '') +
+                  '<div style="font-size: 12px; opacity: 0.7; margin-top: 8px;">' +
+                    '<div>Onset: ' + (w.onset ? new Date(w.onset).toLocaleString() : 'Unknown') + '</div>' +
+                    '<div>Expires: ' + (w.expires ? new Date(w.expires).toLocaleString() : 'Unknown') + '</div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>';
+            }).join('');
+          }
+        }
+      }).catch(function(e) { console.error('SMHI warnings fetch failed:', e); });
+      
+      // Toggle warning details
+      window.toggleWarning = function(warningId) {
+        var detailsEl = document.getElementById(warningId);
+        var isVisible = detailsEl.style.display !== 'none';
+        
+        // Find the arrow indicator
+        var warningItem = detailsEl.parentElement;
+        var arrow = warningItem.querySelector('span');
+        
+        if (isVisible) {
+          detailsEl.style.display = 'none';
+          if (arrow) arrow.innerHTML = arrow.innerHTML.replace('▲', '▼');
+        } else {
+          detailsEl.style.display = 'block';
+          if (arrow) arrow.innerHTML = arrow.innerHTML.replace('▼', '▲');
+        }
+      };
+    }
+  })();
+  </script>
+
+  <!-- Analytics Page Fallback -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script>
+  (function() {
+    var analyticsChart = null;
+    var currentSource = 'indoor';
+    var currentMetric = 'temperature';
+    var currentRange = '24h';
+    
+    var metricConfigs = {
+      temperature: { title: 'Temperature', field: 'temperature', unit: '°C', color: 'rgba(96, 165, 250, 1)' },
+      humidity: { title: 'Humidity', field: 'humidity', unit: '%', color: 'rgba(34, 197, 94, 1)' },
+      pressure: { title: 'Pressure', field: 'pressure', unit: 'hPa', color: 'rgba(251, 191, 36, 1)' },
+      co2: { title: 'CO₂', field: 'eco2', unit: 'ppm', color: 'rgba(239, 68, 68, 1)' },
+      tvoc: { title: 'TVOC', field: 'tvoc', unit: 'ppb', color: 'rgba(168, 85, 247, 1)' }
+    };
+    
+    var rangeLabels = { '24h': '24 Hours', '2d': '2 Days', '4d': '4 Days', '1w': '1 Week', '1m': '1 Month' };
+    
+    function loadAnalyticsChart() {
+      var config = metricConfigs[currentMetric];
+      if (!config) return;
+      
+      var chartInfo = document.getElementById('chart-info-text');
+      if (chartInfo) {
+        chartInfo.textContent = (currentSource === 'indoor' ? 'Indoor' : 'Outdoor') + ' ' + config.title + ' • ' + rangeLabels[currentRange];
+      }
+      
+      var historyEndpoint = currentSource === 'indoor' ? '/api/indoor-history' : '/api/history';
+      var currentEndpoint = currentSource === 'indoor' ? '/api/indoor' : '/api/current';
+      
+      Promise.all([
+        fetch(historyEndpoint + '?range=' + currentRange).then(function(r) { return r.json(); }),
+        fetch(currentEndpoint).then(function(r) { return r.json(); })
+      ]).then(function(results) {
+        var history = results[0];
+        var currentData = results[1];
+        
+        // API returns {temperature: [...], humidity: [...], timestamps: [...]} format
+        var values = history[config.field] || [];
+        values = values.filter(function(v) { return v != null; });
+        var timestamps = history.timestamps || [];
+        
+        // Calculate stats
+        var current = currentData[config.field];
+        var avg = values.length ? (values.reduce(function(a,b) { return a+b; }, 0) / values.length) : null;
+        var min = values.length ? Math.min.apply(null, values) : null;
+        var max = values.length ? Math.max.apply(null, values) : null;
+        
+        // Trend
+        var trend = '--';
+        if (values.length >= 2) {
+          var recentAvg = values.slice(-Math.ceil(values.length/4)).reduce(function(a,b){return a+b;},0) / Math.ceil(values.length/4);
+          var olderAvg = values.slice(0, Math.ceil(values.length/4)).reduce(function(a,b){return a+b;},0) / Math.ceil(values.length/4);
+          var diff = recentAvg - olderAvg;
+          trend = diff > 0.5 ? '↑ Rising' : (diff < -0.5 ? '↓ Falling' : '→ Stable');
+        }
+        
+        document.getElementById('stat-current').textContent = current != null ? current.toFixed(1) + ' ' + config.unit : '--';
+        document.getElementById('stat-average').textContent = avg != null ? avg.toFixed(1) + ' ' + config.unit : '--';
+        document.getElementById('stat-min').textContent = min != null ? min.toFixed(1) + ' ' + config.unit : '--';
+        document.getElementById('stat-max').textContent = max != null ? max.toFixed(1) + ' ' + config.unit : '--';
+        document.getElementById('stat-trend').textContent = trend;
+        document.getElementById('data-points-info').textContent = values.length + ' points';
+        
+        // Chart - ensure previous instance is destroyed
+        if (analyticsChart) {
+          analyticsChart.destroy();
+          analyticsChart = null;
+        }
+        
+        var canvas = document.getElementById('main-analytics-chart');
+        if (!canvas) return;
+        
+        // Get existing chart on this canvas and destroy it
+        var existingChart = Chart.getChart(canvas);
+        if (existingChart) existingChart.destroy();
+        
+        var ctx = canvas.getContext('2d');
+        
+        analyticsChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: timestamps,
+            datasets: [{
+              label: config.title,
+              data: values,
+              borderColor: config.color,
+              backgroundColor: config.color.replace('1)', '0.1)'),
+              borderWidth: 2,
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: {
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                ticks: { color: 'rgba(255,255,255,0.7)', maxRotation: 45 }
+              },
+              y: {
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                ticks: { color: 'rgba(255,255,255,0.7)' }
+              }
+            }
+          }
+        });
+      }).catch(function(e) { console.error('Analytics load failed:', e); });
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      // Source toggle (Indoor/Outdoor)
+      document.querySelectorAll('.source-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.source-btn').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          currentSource = btn.getAttribute('data-source');
+          
+          // Hide indoor-only metrics when outdoor selected
+          var isIndoor = currentSource === 'indoor';
+          document.querySelectorAll('.metric-pill.indoor-only').forEach(function(pill) {
+            pill.style.display = isIndoor ? '' : 'none';
+          });
+          
+          // Switch to temperature if current metric is indoor-only
+          if (!isIndoor && (currentMetric === 'co2' || currentMetric === 'tvoc')) {
+            document.querySelectorAll('.metric-pill').forEach(function(p) { p.classList.remove('active'); });
+            document.querySelector('.metric-pill[data-metric="temperature"]').classList.add('active');
+            currentMetric = 'temperature';
+          }
+          loadAnalyticsChart();
+        });
+      });
+      
+      // Metric pills
+      document.querySelectorAll('.metric-pill').forEach(function(pill) {
+        pill.addEventListener('click', function() {
+          document.querySelectorAll('.metric-pill').forEach(function(p) { p.classList.remove('active'); });
+          pill.classList.add('active');
+          currentMetric = pill.getAttribute('data-metric');
+          loadAnalyticsChart();
+        });
+      });
+      
+      // Time range pills
+      document.querySelectorAll('.time-pill').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.time-pill').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          currentRange = btn.getAttribute('data-range');
+          loadAnalyticsChart();
+        });
+      });
+      
+      // Load chart when switching to analytics tab
+      var origSwitchToTab = window.switchToTab;
+      window.switchToTab = function(tabName) {
+        origSwitchToTab(tabName);
+        if (tabName === 'analytics') {
+          setTimeout(loadAnalyticsChart, 300);
+        }
+        if (tabName === 'outdoor') {
+          setTimeout(loadForecastChart, 300);
+        }
+      };
+      
+      // Auto-load chart after initial page load
+      setTimeout(loadAnalyticsChart, 1000);
+      
+      // Also load when tab becomes visible
+      var observer = new MutationObserver(function() {
+        var analyticsTab = document.getElementById('analytics-content');
+        if (analyticsTab && analyticsTab.classList.contains('active')) {
+          setTimeout(loadAnalyticsChart, 100);
+          observer.disconnect();
+        }
+      });
+      var analyticsContent = document.getElementById('analytics-content');
+      if (analyticsContent) {
+        observer.observe(analyticsContent, { attributes: true, attributeFilter: ['class'] });
+      }
+    });
+  })();
+  </script>
+  
+  <!-- 24-Hour Forecast Chart -->
+  <script>
+  (function() {
+    var forecastChart = null;
+    
+    window.loadForecastChart = function() {
+      fetch('/api/forecast-24h').then(function(r) { return r.json(); }).then(function(data) {
+        if (!data.timeSeries || data.timeSeries.length === 0) return;
+        
+        var labels = data.timeSeries.map(function(item) {
+          var d = new Date(item.validTime);
+          return d.getHours() + ':00';
+        });
+        
+        var temps = data.timeSeries.map(function(item) {
+          return item.params.t;
+        });
+        
+        if (forecastChart) forecastChart.destroy();
+        
+        var canvas = document.getElementById('forecast-timeline-chart');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        
+        forecastChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Temperature',
+              data: temps,
+              borderColor: 'rgba(96, 165, 250, 1)',
+              backgroundColor: 'rgba(96, 165, 250, 0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.3,
+              pointRadius: 3,
+              pointBackgroundColor: 'rgba(96, 165, 250, 1)'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return context.parsed.y.toFixed(1) + '°C';
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                ticks: { color: 'rgba(255,255,255,0.7)' }
+              },
+              y: {
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                ticks: { 
+                  color: 'rgba(255,255,255,0.7)',
+                  callback: function(value) { return value + '°'; }
+                }
+              }
+            }
+          }
+        });
+      }).catch(function(e) { console.error('Forecast chart failed:', e); });
+    };
+    
+    // Load on page ready
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(loadForecastChart, 1000);
+      
+      // Also load when outdoor tab becomes active
+      var observer = new MutationObserver(function() {
+        var outdoorTab = document.getElementById('outdoor-content');
+        if (outdoorTab && outdoorTab.classList.contains('active')) {
+          setTimeout(loadForecastChart, 100);
+        }
+      });
+      var outdoorContent = document.getElementById('outdoor-content');
+      if (outdoorContent) {
+        observer.observe(outdoorContent, { attributes: true, attributeFilter: ['class'] });
+      }
+    });
+  })();
+  </script>
+
+  <!-- Canvas 2D Snow Animation (Weather-Controlled) -->
+  <script>
+  (function() {
+    var canvas, ctx, snowflakes = [], maxSnowflakes = 100;
+    var isSnowing = false;
+    var animationId = null;
+    
+    function initSnowAnimation() {
+      console.log('Initializing Canvas 2D snow animation');
+      
+      // Use dedicated snow canvas (separate from Three.js canvas)
+      canvas = document.getElementById('snow-canvas');
+      if (!canvas) {
+        console.error('Canvas element #snow-canvas not found');
+        return;
+      }
+      
+      ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.error('Could not get 2D context for snow canvas');
+        return;
+      }
+      
+      // Set canvas size
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      console.log('Canvas initialized:', canvas.width, 'x', canvas.height);
+      
+      // Snowflake class
+      function Snowflake() {
+        this.reset();
+      }
+      
+      Snowflake.prototype.reset = function() {
+        this.x = Math.random() * canvas.width;
+        this.y = -10;
+        this.radius = Math.random() * 2.5 + 1.5;
+        this.speed = Math.random() * 1 + 0.5;
+        this.wind = Math.random() * 0.5 - 0.25;
+        this.opacity = Math.random() * 0.4 + 0.6;
+        this.swaySpeed = Math.random() * 0.02 + 0.01;
+        this.swayOffset = Math.random() * Math.PI * 2;
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+      };
+      
+      Snowflake.prototype.update = function() {
+        this.y += this.speed;
+        this.x += Math.sin(Date.now() * 0.001 * this.swaySpeed + this.swayOffset) * 0.3;
+        this.x += this.wind;
+        this.rotation += this.rotationSpeed;
+        
+        if (this.y > canvas.height + 10) {
+          this.reset();
+        }
+        
+        if (this.x > canvas.width + 10) {
+          this.x = -10;
+        } else if (this.x < -10) {
+          this.x = canvas.width + 10;
+        }
+      };
+      
+      Snowflake.prototype.draw = function() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        
+        var size = this.radius;
+        
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+        
+        ctx.beginPath();
+        ctx.arc(0, 0, size, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, ' + this.opacity + ')';
+        ctx.fill();
+        
+        ctx.shadowBlur = 0;
+        ctx.restore();
+      };
+      
+      // Create snowflakes
+      for (var i = 0; i < maxSnowflakes; i++) {
+        var snowflake = new Snowflake();
+        snowflake.y = Math.random() * canvas.height;
+        snowflakes.push(snowflake);
+      }
+      
+      // Animation loop
+      function animate() {
+        if (!isSnowing) return; // Stop animating if not snowing
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        for (var i = 0; i < snowflakes.length; i++) {
+          snowflakes[i].update();
+          snowflakes[i].draw();
+        }
+        
+        animationId = requestAnimationFrame(animate);
+      }
+      
+      // Handle window resize
+      window.addEventListener('resize', function() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      });
+      
+      // Expose control functions globally
+      window.startSnowAnimation = function() {
+        if (!isSnowing) {
+          isSnowing = true;
+          console.log('Snow animation started');
+          animate();
+        } else if (!animationId) {
+          // Self-heal: animation flag is set but loop stopped, restart it
+          console.log('Snow animation self-healing - restarting loop');
+          animate();
+        }
+      };
+      
+      window.stopSnowAnimation = function() {
+        if (isSnowing) {
+          isSnowing = false;
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+          }
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          console.log('Snow animation stopped');
+        }
+      };
+      
+      // Check if snow animation should be running (self-healing every 5 seconds)
+      window.checkSnowAnimation = function() {
+        if (isSnowing && !animationId) {
+          console.log('Snow animation watchdog - restarting stopped animation');
+          animate();
+        }
+      };
+      setInterval(window.checkSnowAnimation, 5000);
+      
+      console.log('Snow animation initialized (waiting for weather data)');
+    }
+    
+    // Initialize when ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initSnowAnimation);
+    } else {
+      initSnowAnimation();
+    }
+  })();
+  </script>
+
+  <!-- Main App Logic -->
+  <script src="overview-new.js?v=29"></script>
+  
+  <!-- Failsafe: Hide loading screen after reasonable time -->
+  <script>
+    // Ensure loading screen doesn't stay forever if app.js fails to load
+    setTimeout(function() {
+      const ls = document.getElementById('loading-screen');
+      const lt = document.querySelector('.loading-text');
+      if (ls && !ls.classList.contains('hidden')) {
+        console.warn('Failsafe: Hiding loading screen after timeout');
+        if (lt) lt.textContent = 'Ready!';
+        setTimeout(function() {
+          ls.classList.add('hidden');
+        }, 500);
+      }
+    }, 10000); // 10 second max
+  </script>
+  
+  <script type="module" src="app.js?v=21"></script>
+
+</body>
+</html>
